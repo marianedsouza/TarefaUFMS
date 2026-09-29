@@ -1,0 +1,44 @@
+Modelo de deep learning: all-MiniLM-L6-v2
+Dimensao dos embeddings: 384
+Numero de frases: 80
+== PCA ==
+Dimensao original dos embeddings: 384
+Variancia explicada pelas 2 primeiras componentes: 9.47%
+Variancia explicada pelas 3 primeiras componentes: 13.36%
+Componentes necessarias para >= 80% da variancia: 40
+Componentes necessarias para >= 90% da variancia: 54
+Componentes usadas no K-Means: 2 (9.47% da variancia)
+k=2: silhouette=0.3797
+k=3: silhouette=0.4095
+k=4: silhouette=0.4170
+k=5: silhouette=0.4034
+k=6: silhouette=0.4122
+k=7: silhouette=0.3683
+k=8: silhouette=0.3822
+k=9: silhouette=0.3758
+k=10: silhouette=0.3553
+MELHOR k = 4 (silhouette = 0.4170)
+
+== ANALISE DOS GRUPOS ==
+Cluster 0: 7 frases | categoria dominante = 'tecnologia' (7/7 = 100% de pureza)
+  composicao: {'tecnologia': 7}
+  exemplo: A inteligencia artificial esta transformando o mercado de software.
+  exemplo: A linguagem Python e muito usada em ciencia de dados.
+  exemplo: Programadores usam controle de versao para colaborar em projetos.
+Cluster 1: 28 frases | categoria dominante = 'esportes' (13/28 = 46% de pureza)
+  composicao: {'esportes': 13, 'culinaria': 8, 'natureza': 7}
+  exemplo: O jogador marcou um gol incrivel nos ultimos minutos da partida.
+  exemplo: O maratonista treinou meses para completar a corrida de rua.
+  exemplo: A tenista sacou forte e conquistou o ponto decisivo.
+Cluster 2: 22 frases | categoria dominante = 'tecnologia' (10/22 = 45% de pureza)
+  composicao: {'tecnologia': 10, 'esportes': 4, 'culinaria': 7, 'natureza': 1}
+  exemplo: O novo processador tem oito nucleos e alta velocidade de clock.
+  exemplo: O smartphone novo vem com uma bateria de longa duracao.
+  exemplo: Redes neurais aprendem padroes a partir de grandes volumes de dados.
+Cluster 3: 23 frases | categoria dominante = 'natureza' (12/23 = 52% de pureza)
+  composicao: {'tecnologia': 3, 'esportes': 3, 'culinaria': 5, 'natureza': 12}
+  exemplo: Precisamos atualizar o servidor para melhorar o desempenho do site.
+  exemplo: O aplicativo trava quando abrimos muitas abas ao mesmo tempo.
+  exemplo: O teclado mecanico tem uma resposta tatil muito agradavel.
+
+Adjusted Rand Index (clusters vs categorias reais): 0.1471
