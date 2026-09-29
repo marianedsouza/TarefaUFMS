@@ -1,99 +1,66 @@
-# PCA + K-Means sobre Embeddings de Deep Learning
+# Embeddings de Texto em Português + PCA + K-Means
 
-Documentação técnica do projeto. Ele gera representações vetoriais
-(*embeddings*) de frases usando um modelo de deep learning, reduz a
-dimensionalidade com **PCA** e descobre grupos com **K-Means**, escolhendo o
-número de grupos pelo **coeficiente de silhueta** (`silhouette_score`).
+Documentação técnica do projeto. Ele representa 150 textos em português como
+vetores (*embeddings*) usando um modelo de deep learning multilíngue, reduz a
+dimensionalidade com **PCA (2D e 3D)** e descobre grupos com **K-Means**,
+escolhendo o número de grupos pelo **método do cotovelo** e pelo
+**silhouette_score**. Segue a prática da aula de Ciência de Dados.
 
-> Para a leitura orientada à atividade (metodologia, resultados e discussão
-> acadêmica), veja [`RELATORIO.md`](RELATORIO.md). Este README foca no **como
-> o código funciona e como executá-lo**.
-
----
-
-## Sumário
-
-- [Visão geral do pipeline](#visão-geral-do-pipeline)
-- [Requisitos](#requisitos)
-- [Instalação](#instalação)
-- [Como executar](#como-executar)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Documentação dos módulos](#documentação-dos-módulos)
-  - [`dados.py`](#dadospy)
-  - [`embeddings.py`](#embeddingspy)
-  - [`main.py`](#mainpy)
-- [Parâmetros de configuração](#parâmetros-de-configuração)
-- [Saídas geradas](#saídas-geradas)
-- [Decisões técnicas](#decisões-técnicas)
-- [Solução de problemas](#solução-de-problemas)
+> Relatório da atividade (formato de entrega): [`RELATORIO.md`](RELATORIO.md).
+> Este README foca em **como o código funciona e como executá-lo**.
 
 ---
 
 ## Visão geral do pipeline
 
 ```
-frases (texto)
+dataset_150_textos_portugues.csv  (150 textos, 6 categorias)
       │
       ▼
-[ embeddings.py ]  modelo Transformer all-MiniLM-L6-v2
-      │            → matriz 80 × 384
-      ▼
-[ main.py ] normalização L2
+[ embeddings.py ]  paraphrase-multilingual-MiniLM-L12-v2  → 150 × 384
       │
       ▼
-   PCA (sklearn.decomposition.PCA)
-      │  ├─ análise da variância explicada (todas as componentes)
-      │  └─ projeção reduzida a 2 componentes p/ clustering
-      ▼
-   K-Means para k = 2..10
-      │  └─ silhouette_score em cada k → escolhe o maior
-      ▼
-   K-Means final com o melhor k
+[ main.py ]  normalização L2
+      │
+      ├─ PCA (2D e 3D)  → visualização
+      └─ K-Means no espaço completo (384-d)
+             ├─ método do cotovelo (inércia × k)
+             └─ silhouette_score × k  → escolhe o melhor k
       │
       ▼
-   análise dos grupos + figuras + CSV + resumo
+  caracterização dos grupos + crosstab + figuras + CSVs
 ```
+
+O K-Means roda no **espaço completo** dos embeddings (como na aula); o PCA é usado
+apenas para **visualizar** os resultados em 2D e 3D.
 
 ---
 
 ## Requisitos
 
 - **Python 3.9+** (testado em 3.13)
-- Dependências (em `requirements.txt`):
-  - `numpy`, `pandas` — manipulação numérica e tabular
-  - `scikit-learn` — PCA, K-Means, silhouette_score
-  - `matplotlib`, `seaborn` — gráficos
-  - `sentence-transformers` — modelo de deep learning (traz `torch`)
+- Dependências (`requirements.txt`): `numpy`, `pandas`, `scikit-learn`,
+  `matplotlib`, `seaborn`, `sentence-transformers` (traz `torch`).
 
-Na primeira execução o modelo `all-MiniLM-L6-v2` (~90 MB) é **baixado
-automaticamente** da internet e fica em cache local. As execuções seguintes
-são offline.
+Na primeira execução o modelo multilíngue (~470 MB) é baixado do Hugging Face e
+fica em cache local.
 
 ---
 
-## Instalação
+## Instalação e execução
 
 ```powershell
 pip install -r requirements.txt
+python criar_dataset.py   # gera o CSV (opcional: main.py gera se faltar)
+python main.py            # pipeline completo
+python gerar_html.py      # (opcional) monta index.html com os resultados
 ```
 
----
-
-## Como executar
+Para ver o `index.html` no navegador (as imagens precisam de HTTP):
 
 ```powershell
-python main.py
-```
-
-O script imprime o progresso no terminal e grava os artefatos em `figuras/` e
-`resultados/`. Não abre janelas: os gráficos são salvos direto em PNG (backend
-`Agg` do matplotlib).
-
-Também é possível rodar cada módulo isoladamente para inspeção:
-
-```powershell
-python dados.py        # mostra a contagem de frases por categoria
-python embeddings.py   # gera e imprime um embedding de exemplo
+python -m http.server 8010
+# abra http://localhost:8010/index.html
 ```
 
 ---
@@ -102,142 +69,86 @@ python embeddings.py   # gera e imprime um embedding de exemplo
 
 ```
 .
-├── dados.py            # dataset: 80 frases rotuladas em 4 categorias
-├── embeddings.py       # gera embeddings 384-dim com all-MiniLM-L6-v2
-├── main.py             # pipeline PCA → K-Means → silhouette → análise
-├── requirements.txt    # dependências
-├── README.md           # esta documentação técnica
-├── RELATORIO.md        # relatório da atividade (metodologia e resultados)
-├── figuras/            # gráficos PNG gerados
-│   ├── pca_variancia_explicada.png
-│   ├── pca_projecao_2d_categorias.png
-│   ├── silhouette_por_k.png
-│   └── clusters_kmeans_2d.png
+├── criar_dataset.py                  # gera a base de 150 textos (6 categorias)
+├── dataset_150_textos_portugues.csv  # base reprodutível (texto, categoria)
+├── dados.py                          # carrega o CSV
+├── embeddings.py                     # embeddings 384-d (modelo multilíngue)
+├── main.py                           # PCA 2D/3D + cotovelo + silhouette + K-Means
+├── gerar_html.py                     # monta index.html a partir dos resultados
+├── index.html                        # página visual dos resultados
+├── requirements.txt
+├── README.md                         # esta documentação
+├── RELATORIO.md                      # relatório da atividade (formato de entrega)
+├── figuras/                          # 6 gráficos PNG
+│   ├── pca_2d_sem_rotulo.png
+│   ├── pca_2d_categorias.png
+│   ├── pca_2d_clusters.png
+│   ├── pca_3d_clusters.png
+│   ├── metodo_cotovelo.png
+│   └── silhouette_por_k.png
 └── resultados/
-    ├── atribuicoes.csv # frase, categoria real e cluster atribuído
-    └── resumo.txt      # resumo numérico da execução
+    ├── atribuicoes.csv               # texto, categoria real, cluster
+    ├── crosstab_categoria_cluster.csv
+    └── resumo.txt
 ```
 
 ---
 
 ## Documentação dos módulos
 
+### `criar_dataset.py`
+Define `CATEGORIAS` (6 temas × 25 frases) e grava
+`dataset_150_textos_portugues.csv` com colunas `texto` e `categoria`.
+
 ### `dados.py`
-
-Conjunto de dados de texto usado na atividade.
-
-| Item | Descrição |
+| Função | Descrição |
 |---|---|
-| `FRASES` | Lista de tuplas `(frase, categoria)`. São 80 frases, 20 por categoria: `tecnologia`, `esportes`, `culinaria`, `natureza`. |
-| `carregar_dados()` | Retorna `(textos, rotulos)` — duas listas paralelas: os textos e suas categorias reais. |
-
-Os rótulos **não** entram no K-Means (que é não supervisionado); servem só para
-avaliar, ao final, se os grupos descobertos correspondem aos temas reais.
-
-```python
-from dados import carregar_dados
-textos, rotulos = carregar_dados()   # 80 textos, 80 rótulos
-```
+| `carregar_df(caminho)` | Retorna o `DataFrame` (`texto`, `categoria`); gera o CSV se faltar. |
+| `carregar_dados(caminho)` | Retorna `(textos, rotulos)` como listas. |
 
 ### `embeddings.py`
-
-Converte texto em vetores densos usando um modelo de deep learning.
-
 | Item | Descrição |
 |---|---|
-| `MODELO_PADRAO` | Nome do modelo: `"all-MiniLM-L6-v2"`. |
-| `gerar_embeddings(textos, nome_modelo=MODELO_PADRAO)` | Carrega o modelo, codifica os textos e retorna `(emb, info)`. |
-
-Retorno de `gerar_embeddings`:
-- `emb`: `np.ndarray` de forma `(n_textos, 384)`, `dtype=float64`.
-- `info`: `dict` com `{"modelo": <nome>, "dimensao": 384}`.
-
-```python
-from embeddings import gerar_embeddings
-emb, info = gerar_embeddings(textos)   # emb.shape == (80, 384)
-```
-
-O módulo também define variáveis de ambiente (`HF_HUB_DISABLE_SYMLINKS_WARNING`,
-`TOKENIZERS_PARALLELISM`) e filtra warnings para manter a saída limpa no
-Windows.
+| `MODELO_PADRAO` | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. |
+| `gerar_embeddings(textos, nome_modelo)` | Retorna `(emb, info)`; `emb` é `(n, 384)`. |
 
 ### `main.py`
-
-Orquestra todo o pipeline. Funções principais:
-
 | Função | Responsabilidade |
 |---|---|
-| `preparar_pastas()` | Cria `figuras/` e `resultados/` se não existirem. |
-| `aplicar_pca(X, linhas_relatorio)` | Normaliza (L2), ajusta o PCA, calcula variância explicada, salva o gráfico de variância acumulada. Retorna `(X_pca_full, pca, X_norm)`. |
-| `plot_projecao_categorias(X_pca_full, rotulos)` | Gráfico 2D (PC1×PC2) colorido pelas categorias reais. |
-| `escolher_k(X, linhas_relatorio, k_min=2, k_max=10)` | Roda K-Means para cada `k`, calcula `silhouette_score`, escolhe o `k` de maior silhueta e salva o gráfico silhueta×k. Retorna `(melhor_k, scores)`. |
-| `aplicar_kmeans_final(X, k)` | Ajusta o K-Means final com o melhor `k`. Retorna `(labels, km)`. |
-| `plot_clusters_2d(X_pca_full, labels, k, centroides)` | Gráfico 2D colorido pelos clusters, com os centróides. |
-| `analisar_grupos(textos, rotulos, labels, linhas_relatorio)` | Para cada cluster calcula categoria dominante, pureza e composição; calcula o Adjusted Rand Index; salva `atribuicoes.csv`. |
-| `main()` | Encadeia tudo e grava `resumo.txt`. |
+| `aplicar_pca(X, rel)` | PCA de 3 componentes; variância explicada. Retorna `(X_pca, pca)`. |
+| `plot_pca_2d_sem_rotulo` / `plot_pca_2d_categorias` | Projeções 2D (bruta e por categoria). |
+| `plot_pca_2d_clusters` / `plot_pca_3d_clusters` | Clusters em 2D e 3D. |
+| `escolher_k(X, rel, k_min, k_max)` | Cotovelo + silhouette; escolhe o k de maior silhueta. |
+| `analisar_grupos(df, rel)` | Categoria dominante, pureza, exemplos, crosstab e ARI. |
+| `main()` | Encadeia dados → embeddings → L2 → PCA → K-Means → análise. |
 
 ---
 
 ## Parâmetros de configuração
 
-Todos no topo/corpo de `main.py`:
-
-| Parâmetro | Valor padrão | Efeito |
-|---|---|---|
-| `RANDOM_STATE` | `42` | Semente para PCA e K-Means (reprodutibilidade). |
-| `N_COMP_CLUSTER` | `2` | Nº de componentes principais usadas no K-Means. |
-| `k_min`, `k_max` (em `escolher_k`) | `2`, `10` | Intervalo de `k` testado pela silhueta. |
-| `n_init` (K-Means) | `10` | Reinicializações do K-Means (pega a melhor). |
-| `MODELO_PADRAO` (em `embeddings.py`) | `all-MiniLM-L6-v2` | Modelo de deep learning usado. |
-
-Para experimentar: aumente `N_COMP_CLUSTER` (mais informação semântica, silhueta
-tende a cair) ou troque `MODELO_PADRAO` por outro modelo de sentence-transformers.
+| Parâmetro | Local | Padrão | Efeito |
+|---|---|---|---|
+| `RANDOM_STATE` | `main.py` | `42` | Reprodutibilidade de PCA e K-Means. |
+| `k_min`, `k_max` | `escolher_k` | `2`, `10` | Faixa de k avaliada. |
+| `n_init` | K-Means | `10` | Reinicializações do K-Means. |
+| `MODELO_PADRAO` | `embeddings.py` | multilíngue MiniLM-L12 | Modelo de embeddings. |
+| categorias/frases | `criar_dataset.py` | 6 × 25 | Conteúdo da base. |
 
 ---
 
-## Saídas geradas
+## Resultado obtido
 
-**`figuras/`**
-- `pca_variancia_explicada.png` — variância acumulada vs. nº de componentes (linhas de 80% e 90%).
-- `pca_projecao_2d_categorias.png` — dados em 2D coloridos pela categoria real.
-- `silhouette_por_k.png` — silhouette_score para cada `k`, destacando o melhor.
-- `clusters_kmeans_2d.png` — clusters do K-Means em 2D, com centróides.
-
-**`resultados/`**
-- `atribuicoes.csv` — colunas `texto`, `categoria_real`, `cluster` (UTF-8 com BOM, abre certo no Excel).
-- `resumo.txt` — variância do PCA, silhueta por `k`, melhor `k`, composição dos clusters e ARI.
-
----
-
-## Decisões técnicas
-
-- **Normalização L2 em vez de StandardScaler.** Embeddings de sentence-transformers
-  são vetores densos comparados por similaridade de cosseno; normalizar pela norma
-  L2 é o pré-processamento recomendado. O `StandardScaler` piorou a recuperação
-  dos grupos nos testes.
-- **Clustering em 2 componentes.** Rodar K-Means/silhueta nas 384 dimensões (ou em
-  dezenas de componentes) sofre com a *maldição da dimensionalidade*: as distâncias
-  euclidianas ficam parecidas e o `silhouette_score` cai para perto de zero. Com 2
-  componentes a silhueta fica bem definida e ainda apontou `k = 4`, que coincide
-  com o número real de categorias.
-- **`silhouette_score` como critério de `k`.** Métrica não supervisionada que mede
-  o quão bem cada ponto se encaixa no próprio cluster versus o cluster vizinho;
-  escolhemos o `k` de maior valor.
-- **Backend `Agg` do matplotlib.** Salva PNGs sem abrir janela, adequado para
-  execução em terminal/CI.
+- `silhouette_score` máximo em **k = 6** = número real de categorias.
+- **Adjusted Rand Index ≈ 0,85**; pureza de **92%–96%** por grupo.
+- Cada grupo corresponde a um tema: culinária, esportes, tecnologia, educação,
+  saúde e natureza. Detalhes e interpretação em `RELATORIO.md`.
 
 ---
 
 ## Solução de problemas
 
-- **Aviso de *symlink* do Hugging Face no Windows.** Inofensivo (só afeta a
-  eficiência do cache). Já é silenciado via `HF_HUB_DISABLE_SYMLINKS_WARNING=1`.
-- **A primeira execução demora.** É o download único do modelo (~90 MB). Depois
-  fica em cache (`~/.cache/huggingface`).
-- **`exit code 1` no PowerShell mesmo terminando OK.** O PowerShell trata
-  qualquer texto em *stderr* (como warnings) como erro. O script conclui
-  normalmente; confira a mensagem final `Concluido.` e os arquivos em
-  `resultados/`.
-- **Sem internet na primeira execução.** O download do modelo falhará. Rode uma
-  vez com conexão para popular o cache.
-```
+- **Aviso de symlink do Hugging Face (Windows):** inofensivo; já silenciado.
+- **Primeira execução demora:** download único do modelo (~470 MB), depois fica
+  em cache (`~/.cache/huggingface`).
+- **`exit code 1` no PowerShell mesmo terminando OK:** o PowerShell trata texto
+  em *stderr* (warnings) como erro; confira a mensagem final `Concluido.`.

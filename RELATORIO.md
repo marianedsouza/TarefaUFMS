@@ -1,208 +1,217 @@
-# Relatório — Redução de Dimensionalidade (PCA) e Agrupamento (K-Means) sobre Embeddings de Deep Learning
+# Relatório de análise exploratória e agrupamento de dados
 
-## 1. Objetivo
+## Identificação
 
-Aplicar **redução de dimensionalidade com PCA** sobre dados gerados por um
-**modelo de deep learning** e, em seguida, usar o algoritmo **K-Means** para
-descobrir grupos (clusters) nesses dados. O número de grupos é escolhido de
-forma objetiva pelo **coeficiente de silhueta** (`silhouette_score`),
-selecionando a quantidade de grupos com o **maior** valor de silhueta.
-
-> Atividade que pode ser realizada em grupo de alunos.
-
----
-
-## 2. Dados e modelo de deep learning
-
-- **Dado de entrada:** 80 frases curtas em português, distribuídas em 4 temas
-  bem distintos (20 frases cada):
-  - `tecnologia` — computação, software, hardware
-  - `esportes` — futebol, corrida, competições
-  - `culinaria` — receitas, ingredientes, pratos
-  - `natureza` — meio ambiente, fauna, flora
-- **Modelo de deep learning:** `all-MiniLM-L6-v2` da biblioteca
-  [sentence-transformers](https://www.sbert.net/). É uma rede neural do tipo
-  **Transformer** pré-treinada que converte cada frase em um vetor denso
-  (**embedding**) de **384 dimensões**. Frases com significado parecido ficam
-  próximas nesse espaço vetorial.
-
-O rótulo real (a categoria de cada frase) **não** é usado pelo K-Means. Ele
-serve apenas para, ao final, avaliar se os grupos descobertos de forma não
-supervisionada correspondem aos temas reais.
-
-Resultado desta etapa: uma matriz de **80 × 384** (80 frases, 384 dimensões).
-
----
-
-## 3. Redução de dimensionalidade com PCA
-
-Antes do PCA os embeddings são normalizados (norma L2), que é a forma
-recomendada de comparar vetores de sentence-transformers por distância.
-
-O PCA (Principal Component Analysis) encontra novas direções (componentes
-principais) que concentram a maior parte da **variância** dos dados,
-permitindo representar as 384 dimensões originais com muito menos eixos.
-
-### Variância explicada
-
-| Métrica | Valor |
+| Identificação | Preenchimento |
 |---|---|
-| Dimensão original | 384 |
-| Variância nas 2 primeiras componentes | ~9,5% |
-| Variância nas 3 primeiras componentes | ~13,4% |
-| Componentes para atingir 80% da variância | 40 |
-| Componentes para atingir 90% da variância | 54 |
+| **Integrantes** | [preencher] |
+| **Título do projeto** | Agrupamento semântico de textos em português com embeddings, PCA e K-Means |
+| **Tipo de dado** | ☑ Texto ☐ Imagem ☑ Base com rótulos ☐ Base sem rótulos |
+| **Link do Google Colab** | [inserir URL do notebook com permissão de visualização e execução] |
 
-![Variância explicada acumulada](figuras/pca_variancia_explicada.png)
-
-**Análise:** a variância está bastante distribuída entre muitas componentes —
-sinal de que os embeddings de texto ocupam um espaço de alta dimensão
-intrínseca. Ainda assim, as **2 primeiras componentes** já bastam para
-visualizar a separação temática em 2D e para agrupar os dados de forma clara.
-
-### Projeção 2D pelas categorias reais
-
-![Projeção PCA 2D por categoria](figuras/pca_projecao_2d_categorias.png)
-
-Colorindo a projeção 2D pelas categorias reais, percebe-se que as frases de
-`tecnologia` se destacam bem das demais, enquanto `esportes`, `culinaria` e
-`natureza` têm alguma sobreposição — coerente com o fato de compartilharem
-vocabulário mais cotidiano.
+> Observação sobre os rótulos: a base **possui** categorias reais, mas elas
+> **não são usadas pelo K-Means** (agrupamento não supervisionado). Servem
+> apenas, ao final, para avaliar a qualidade dos grupos encontrados.
 
 ---
 
-## 4. Agrupamento com K-Means e escolha de *k* pela silhueta
+## 1. Objetivo e pergunta de investigação
 
-Aplicamos o K-Means sobre os dados **reduzidos pelo PCA a 2 componentes**.
-Para cada `k` de 2 a 10 calculamos o `silhouette_score` e escolhemos o `k`
-com o **maior** valor.
+Organizar uma base de textos em português representada numericamente por um
+**modelo de deep learning**, visualizar sua estrutura com **PCA em 2D e 3D** e
+aplicar **K-Means** para identificar grupos, interpretando as proximidades e
+caracterizando cada grupo com evidências da própria base.
 
-```python
-from sklearn.metrics import silhouette_score
-
-for k in range(2, 11):
-    labels = KMeans(n_clusters=k, random_state=42, n_init=10).fit_predict(X_reduzido)
-    s = silhouette_score(X_reduzido, labels)
-```
-
-| k | silhouette_score |
-|---|---|
-| 2 | 0,3797 |
-| 3 | 0,4095 |
-| **4** | **0,4170** ← maior |
-| 5 | 0,4034 |
-| 6 | 0,4122 |
-| 7 | 0,3683 |
-| 8 | 0,3822 |
-| 9 | 0,3758 |
-| 10 | 0,3553 |
-
-![Silhueta por k](figuras/silhouette_por_k.png)
-
-### Resultado
-
-> **Quantidade de grupos escolhida: k = 4** (maior valor de silhueta = **0,4170**).
-
-Esse resultado é excelente do ponto de vista didático: o método da silhueta,
-sem conhecer os rótulos, encontrou **exatamente as 4 categorias reais** do
-conjunto de dados.
+**Pergunta central:** *os embeddings semânticos organizam os textos de acordo
+com seus temas, de modo que um algoritmo não supervisionado (K-Means) recupere
+grupos parecidos com as categorias reais?*
 
 ---
 
-## 5. Análise e explicação dos grupos encontrados
+## 2. Unidade de análise e features
 
-![Clusters do K-Means em 2D](figuras/clusters_kmeans_2d.png)
+- **Unidade de análise:** cada linha é **um texto** (frase curta em português).
+- **Base:** 150 textos, **6 categorias** temáticas com 25 textos cada:
+  `tecnologia`, `esportes`, `culinaria`, `natureza`, `saude`, `educacao`.
+  Gerada de forma reprodutível por `criar_dataset.py` →
+  `dataset_150_textos_portugues.csv`.
+- **Features:** vetor de **384 dimensões** (embedding) produzido pelo modelo
+  `paraphrase-multilingual-MiniLM-L12-v2` (Sentence Transformers). É uma rede
+  Transformer multilíngue; textos com sentido próximo geram vetores próximos.
+- **Pré-processamento:** normalização **L2** dos embeddings (comprimento 1),
+  aproximando a geometria da similaridade de cosseno.
 
-Comparando cada cluster com as categorias reais das frases:
-
-| Cluster | Nº de frases | Categoria dominante | Pureza | Composição |
-|---|---|---|---|---|
-| 0 | 7 | **tecnologia** | 100% | tecnologia:7 |
-| 1 | 28 | **esportes** | 46% | esportes:13, culinaria:8, natureza:7 |
-| 2 | 22 | **tecnologia** | 45% | tecnologia:10, esportes:4, culinaria:7, natureza:1 |
-| 3 | 23 | **natureza** | 52% | natureza:12, culinaria:5, tecnologia:3, esportes:3 |
-
-**Interpretação de cada grupo:**
-
-- **Cluster 0 (tecnologia "pura", 100%)** — reúne frases claramente técnicas
-  (inteligência artificial, Python, controle de versão, redes neurais). É o
-  grupo mais coeso e bem separado, porque o vocabulário de computação é o mais
-  distinto de todos.
-- **Cluster 1 (esportes)** — concentra ações e competições esportivas, mas
-  atrai também frases de culinária e natureza que descrevem ações concretas do
-  dia a dia.
-- **Cluster 2 (tecnologia + objetos)** — mistura tecnologia com frases sobre
-  objetos e sensações físicas (smartphone, teclado, ingredientes), que ocupam
-  uma região intermediária do espaço.
-- **Cluster 3 (natureza)** — agrupa bem o tema ambiental (floresta, rios,
-  animais), com alguma contaminação de culinária (ambos citam elementos
-  naturais como frutas, água, plantas).
-
-### Concordância global com as categorias reais
-
-- **Adjusted Rand Index (ARI):** ~0,15
-
-O ARI moderado indica que os grupos **não** reproduzem perfeitamente as 4
-categorias. A causa principal é que, para maximizar a silhueta, usamos apenas
-**2 componentes principais (~9,5% da variância)** — ótimas para separar o tema
-mais distinto (tecnologia) e para visualização, mas insuficientes para capturar
-toda a nuance semântica que separa esportes, culinária e natureza.
-
-**Trade-off observado (conclusão importante da atividade):**
-
-- Poucas componentes → silhueta **alta** (grupos geometricamente bem definidos),
-  mas parte da informação semântica se perde.
-- Muitas componentes → mais informação preservada, porém a distância euclidiana
-  se degrada em alta dimensão (*maldição da dimensionalidade*) e a silhueta cai
-  para perto de zero.
-
-Ou seja: o `silhouette_score` mede a **qualidade geométrica** do agrupamento,
-que nem sempre coincide com a “verdade” semântica dos rótulos. Ainda assim, no
-nosso caso ele acertou o **número** de grupos (k = 4).
+Fluxo: **texto → Sentence Transformer → embedding (384-d) → L2 → PCA / K-Means**.
 
 ---
 
-## 6. Como reproduzir
+## 3. Qualidade dos dados
+
+Verificação antes da análise (script `criar_dataset.py` garante a estrutura):
+
+- **Balanceamento:** 25 textos por categoria (base perfeitamente balanceada).
+- **Ausentes:** nenhum texto vazio; todas as 150 linhas têm texto e categoria.
+- **Duplicatas:** não há textos repetidos.
+- **Idioma:** todos em português, adequado ao modelo multilíngue escolhido.
+
+Uma base balanceada e limpa evita que um tema domine os grupos por simples
+frequência, tornando a leitura do K-Means mais justa.
+
+---
+
+## 4. Redução de dimensionalidade com PCA
+
+As 384 dimensões não são observáveis diretamente. O PCA projeta os dados nas
+direções de maior variância para permitir visualização.
+
+Variância explicada pelas componentes principais:
+
+| Componente | Variância | Acumulada |
+|---|---|---|
+| PC1 | 7,67% | 7,67% |
+| PC2 | 6,00% | 13,67% |
+| PC3 | 5,02% | 18,69% |
+
+**Pergunta:** *duas/três dimensões descrevem toda a estrutura?* Não. Apenas
+~14% (2D) e ~19% (3D) da variância aparece nas primeiras componentes — sinal de
+que os embeddings têm **alta dimensão intrínseca**. Isso **não** significa
+embeddings ruins: significa que a informação está distribuída por muitas
+direções. Por isso o **K-Means é aplicado no espaço completo (384-d)** e o PCA
+é usado só para enxergar o resultado.
+
+### Figura 1 — Projeção PCA 2D (sem rótulos)
+
+![PCA 2D sem rótulos](figuras/pca_2d_sem_rotulo.png)
+
+*Eixos: PC1 × PC2.* **Pergunta:** *há regiões de concentração antes de olhar as
+classes?* Sim — mesmo sem cores, notam-se aglomerados separados por espaços
+vazios, sugerindo que existe estrutura de grupos a ser descoberta.
+
+### Figura 2 — Projeção PCA 2D colorida pela categoria real
+
+![PCA 2D por categoria](figuras/pca_2d_categorias.png)
+
+*Eixos: PC1 × PC2; cor = categoria real.* Os temas ocupam regiões distintas do
+plano. **Tecnologia** e **esportes** aparecem bem destacados; **saúde** e
+**natureza** ficam mais próximos entre si (compartilham vocabulário sobre corpo,
+água, vida), o que antecipa onde o K-Means pode confundir alguns textos.
+
+---
+
+## 5. Escolha do número de grupos (k)
+
+O K-Means foi executado no espaço completo dos embeddings, variando `k` de 2 a
+10, avaliado por dois critérios.
+
+### Figura 3 — Método do cotovelo
+
+![Método do cotovelo](figuras/metodo_cotovelo.png)
+
+*Eixos: k × inércia.* A inércia cai de forma suave, com leve inflexão em torno
+de k = 6, mas o cotovelo não é agudo — comum em dados de alta dimensão.
+
+### Figura 4 — Silhouette Score por k
+
+![Silhouette por k](figuras/silhouette_por_k.png)
+
+*Eixos: k × silhouette_score.* A silhueta é **máxima em k = 6**
+(`silhouette_score = 0,0916`), decaindo depois.
+
+> **Número de grupos escolhido: k = 6** (maior valor de silhueta), que **coincide
+> com o número real de categorias** da base. Valores absolutos baixos de silhueta
+> são esperados em espaços de centenas de dimensões e não invalidam a escolha.
+
+---
+
+## 6. Grupos encontrados e caracterização
+
+Aplicado o K-Means com k = 6, cada grupo foi caracterizado pela categoria
+dominante, pela pureza e por exemplos reais da base.
+
+### Figura 5 — Clusters do K-Means na projeção PCA 2D
+
+![Clusters 2D](figuras/pca_2d_clusters.png)
+
+### Figura 6 — Clusters do K-Means na projeção PCA 3D
+
+![Clusters 3D](figuras/pca_3d_clusters.png)
+
+*A terceira componente (Figura 6) separa grupos que em 2D pareciam encostados
+(ex.: saúde e natureza), confirmando que parte da estrutura só aparece em mais
+dimensões.*
+
+**Caracterização de cada grupo (evidências da base):**
+
+| Cluster | Tema dominante | Pureza | Exemplo representativo |
+|---|---|---|---|
+| 0 | culinária | 24/25 (96%) | "A receita leva farinha, ovos, açúcar e uma pitada de sal." |
+| 1 | esportes | 21/22 (95%) | "O jogador marcou um gol incrível nos últimos minutos da partida." |
+| 2 | tecnologia | 25/27 (93%) | "A inteligência artificial está transformando o mercado de software." |
+| 3 | educação | 23/25 (92%) | "A professora explicou o teorema de Pitágoras no quadro." |
+| 4 | saúde | 24/26 (92%) | "A vacina previne diversas doenças graves na população." |
+| 5 | natureza | 23/25 (92%) | "A floresta amazônica abriga uma enorme diversidade de espécies." |
+
+**Tabela de contingência (categoria real × cluster):**
+
+| categoria \ cluster | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| culinaria | **24** | 0 | 0 | 1 | 0 | 0 |
+| educacao | 0 | 1 | 1 | **23** | 0 | 0 |
+| esportes | 0 | **21** | 1 | 1 | 0 | 2 |
+| natureza | 0 | 0 | 0 | 0 | 2 | **23** |
+| saude | 1 | 0 | 0 | 0 | **24** | 0 |
+| tecnologia | 0 | 0 | **25** | 0 | 0 | 0 |
+
+A diagonal concentra quase todos os textos: cada categoria caiu majoritariamente
+num único cluster. Concordância global medida pelo **Adjusted Rand Index =
+0,8456** (0 = aleatório, 1 = perfeito), indicando forte alinhamento entre os
+grupos não supervisionados e os temas reais.
+
+**Textos agrupados de forma inesperada (análise semântica):** os poucos erros
+têm explicação de conteúdo, não de acaso. Ex.: "O ciclista liderou a etapa nas
+montanhas" (esportes) caiu em *natureza* pela menção a montanhas; frases de
+saúde sobre "água limpa/poluição" tangenciam *natureza*. São ambiguidades
+semânticas reais, não ruído do método.
+
+---
+
+## 7. Hipótese sobre separabilidade e conclusão
+
+**Hipótese confirmada:** os embeddings do modelo multilíngue organizam os textos
+por tema, e o K-Means recupera 6 grupos que correspondem às 6 categorias reais
+(ARI = 0,85; pureza de 92–96%). A escolha de k por silhueta apontou exatamente o
+número correto de temas.
+
+**Cluster ≠ classe:** o K-Means agrupa por proximidade geométrica, não por
+rótulo; por isso textos ambíguos migram para o grupo do tema mais próximo em
+significado — o que é informativo sobre a base, não um defeito.
+
+---
+
+## 8. Limitações
+
+- Base pequena e de frases curtas; textos mais longos e variados podem reduzir a
+  pureza.
+- PCA 2D/3D mostra pouca variância (~14–19%): a visualização é uma **aproximação**
+  e pode sugerir sobreposições que não existem no espaço completo.
+- O valor absoluto da silhueta é baixo (efeito da alta dimensão); ele foi usado
+  de forma **comparativa** entre valores de k, o que é adequado.
+
+---
+
+## 9. Reprodutibilidade
 
 ```bash
 pip install -r requirements.txt
-python main.py
+python criar_dataset.py    # gera dataset_150_textos_portugues.csv (opcional; main gera se faltar)
+python main.py             # embeddings, PCA, K-Means, figuras e resultados
 ```
 
-Arquivos gerados:
+Saídas: figuras em `figuras/`; `resultados/atribuicoes.csv`,
+`resultados/crosstab_categoria_cluster.csv` e `resultados/resumo.txt`.
 
-- `figuras/pca_variancia_explicada.png`
-- `figuras/pca_projecao_2d_categorias.png`
-- `figuras/silhouette_por_k.png`
-- `figuras/clusters_kmeans_2d.png`
-- `resultados/atribuicoes.csv` — frase, categoria real e cluster atribuído
-- `resultados/resumo.txt` — resumo numérico da execução
+## Referências
 
-### Estrutura do projeto
-
-```
-.
-├── dados.py          # 80 frases rotuladas (4 categorias)
-├── embeddings.py     # gera embeddings 384-dim com all-MiniLM-L6-v2
-├── main.py           # pipeline: PCA -> K-Means -> silhouette -> análise
-├── requirements.txt
-├── RELATORIO.md      # este relatório
-├── figuras/          # gráficos gerados
-└── resultados/       # CSV e resumo
-```
-
----
-
-## 7. Conclusão
-
-1. Um modelo de deep learning (Transformer) transformou 80 frases em vetores de
-   384 dimensões.
-2. O **PCA** reduziu essa dimensionalidade e mostrou, pela variância explicada,
-   que os dados têm alta dimensão intrínseca; mesmo assim 2 componentes bastam
-   para visualização e agrupamento.
-3. O **K-Means** com escolha de `k` pelo **`silhouette_score`** apontou
-   **k = 4** (silhueta = 0,4170), coincidindo com o número real de temas.
-4. A análise dos grupos mostrou que o tema **tecnologia** é o mais separável
-   (cluster 100% puro), enquanto esportes, culinária e natureza se sobrepõem
-   parcialmente — um resultado coerente e didaticamente rico sobre as
-   possibilidades e os limites do agrupamento não supervisionado.
+- Sentence Transformers — `paraphrase-multilingual-MiniLM-L12-v2`
+  (https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2).
+- Pedregosa et al. — scikit-learn: PCA, KMeans, silhouette_score, adjusted_rand_score.

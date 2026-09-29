@@ -1,44 +1,62 @@
-Modelo de deep learning: all-MiniLM-L6-v2
+Modelo de deep learning: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 Dimensao dos embeddings: 384
-Numero de frases: 80
-== PCA ==
-Dimensao original dos embeddings: 384
-Variancia explicada pelas 2 primeiras componentes: 9.47%
-Variancia explicada pelas 3 primeiras componentes: 13.36%
-Componentes necessarias para >= 80% da variancia: 40
-Componentes necessarias para >= 90% da variancia: 54
-Componentes usadas no K-Means: 2 (9.47% da variancia)
-k=2: silhouette=0.3797
-k=3: silhouette=0.4095
-k=4: silhouette=0.4170
-k=5: silhouette=0.4034
-k=6: silhouette=0.4122
-k=7: silhouette=0.3683
-k=8: silhouette=0.3822
-k=9: silhouette=0.3758
-k=10: silhouette=0.3553
-MELHOR k = 4 (silhouette = 0.4170)
+Numero de textos: 150
+Categorias: ['culinaria', 'educacao', 'esportes', 'natureza', 'saude', 'tecnologia']
+== PCA (visualizacao) ==
+PC1=7.67%, PC2=6.00%, PC3=5.02%
+Variancia acumulada 2 PCs: 13.67%
+Variancia acumulada 3 PCs: 18.69%
+k=2: inercia=129.73, silhouette=0.0553
+k=3: inercia=123.24, silhouette=0.0636
+k=4: inercia=117.61, silhouette=0.0708
+k=5: inercia=112.13, silhouette=0.0837
+k=6: inercia=107.53, silhouette=0.0916
+k=7: inercia=105.52, silhouette=0.0888
+k=8: inercia=103.84, silhouette=0.0845
+k=9: inercia=102.35, silhouette=0.0746
+k=10: inercia=101.39, silhouette=0.0678
+MELHOR k (silhouette) = 6 (silhouette = 0.0916)
 
-== ANALISE DOS GRUPOS ==
-Cluster 0: 7 frases | categoria dominante = 'tecnologia' (7/7 = 100% de pureza)
-  composicao: {'tecnologia': 7}
-  exemplo: A inteligencia artificial esta transformando o mercado de software.
-  exemplo: A linguagem Python e muito usada em ciencia de dados.
-  exemplo: Programadores usam controle de versao para colaborar em projetos.
-Cluster 1: 28 frases | categoria dominante = 'esportes' (13/28 = 46% de pureza)
-  composicao: {'esportes': 13, 'culinaria': 8, 'natureza': 7}
+== CARACTERIZACAO DOS GRUPOS ==
+Cluster 0: 25 textos | dominante = 'culinaria' (24/25 = 96%)
+  composicao: {'culinaria': 24, 'saude': 1}
+  exemplo: A receita leva farinha, ovos, acucar e uma pitada de sal.
+  exemplo: O molho de tomate fica mais saboroso com manjericao fresco.
+  exemplo: Assamos o bolo de chocolate por quarenta minutos no forno.
+Cluster 1: 22 textos | dominante = 'esportes' (21/22 = 95%)
+  composicao: {'esportes': 21, 'educacao': 1}
   exemplo: O jogador marcou um gol incrivel nos ultimos minutos da partida.
-  exemplo: O maratonista treinou meses para completar a corrida de rua.
-  exemplo: A tenista sacou forte e conquistou o ponto decisivo.
-Cluster 2: 22 frases | categoria dominante = 'tecnologia' (10/22 = 45% de pureza)
-  composicao: {'tecnologia': 10, 'esportes': 4, 'culinaria': 7, 'natureza': 1}
+  exemplo: A selecao venceu o campeonato depois de uma disputa de penaltis.
+  exemplo: O time de basquete converteu a cesta de tres pontos no fim.
+Cluster 2: 27 textos | dominante = 'tecnologia' (25/27 = 93%)
+  composicao: {'tecnologia': 25, 'esportes': 1, 'educacao': 1}
   exemplo: O novo processador tem oito nucleos e alta velocidade de clock.
-  exemplo: O smartphone novo vem com uma bateria de longa duracao.
-  exemplo: Redes neurais aprendem padroes a partir de grandes volumes de dados.
-Cluster 3: 23 frases | categoria dominante = 'natureza' (12/23 = 52% de pureza)
-  composicao: {'tecnologia': 3, 'esportes': 3, 'culinaria': 5, 'natureza': 12}
+  exemplo: A inteligencia artificial esta transformando o mercado de software.
   exemplo: Precisamos atualizar o servidor para melhorar o desempenho do site.
-  exemplo: O aplicativo trava quando abrimos muitas abas ao mesmo tempo.
-  exemplo: O teclado mecanico tem uma resposta tatil muito agradavel.
+Cluster 3: 25 textos | dominante = 'educacao' (23/25 = 92%)
+  composicao: {'esportes': 1, 'culinaria': 1, 'educacao': 23}
+  exemplo: O tecnico mudou a formacao tatica no segundo tempo.
+  exemplo: Preparamos brigadeiros para a festa de aniversario.
+  exemplo: A professora explicou o teorema de Pitagoras no quadro.
+Cluster 4: 26 textos | dominante = 'saude' (24/26 = 92%)
+  composicao: {'natureza': 2, 'saude': 24}
+  exemplo: A reciclagem ajuda a reduzir a poluicao do meio ambiente.
+  exemplo: A preservacao das nascentes garante agua limpa para todos.
+  exemplo: A vacina previne diversas doencas graves na populacao.
+Cluster 5: 25 textos | dominante = 'natureza' (23/25 = 92%)
+  composicao: {'esportes': 2, 'natureza': 23}
+  exemplo: O ciclista liderou a etapa nas montanhas com folga.
+  exemplo: O corredor cruzou a linha de chegada em primeiro lugar.
+  exemplo: A floresta amazonica abriga uma enorme diversidade de especies.
 
-Adjusted Rand Index (clusters vs categorias reais): 0.1471
+Tabela de contingencia:
+cluster      0   1   2   3   4   5
+categoria                         
+culinaria   24   0   0   1   0   0
+educacao     0   1   1  23   0   0
+esportes     0  21   1   1   0   2
+natureza     0   0   0   0   2  23
+saude        1   0   0   0  24   0
+tecnologia   0   0  25   0   0   0
+
+Adjusted Rand Index: 0.8456

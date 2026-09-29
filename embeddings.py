@@ -2,10 +2,11 @@
 Geracao de embeddings (vetores de caracteristicas) com um modelo de
 deep learning.
 
-Usamos o modelo pre-treinado 'all-MiniLM-L6-v2' da biblioteca
-sentence-transformers. Ele e uma rede neural do tipo Transformer que
-converte cada frase em um vetor denso de 384 dimensoes, no qual frases
-com significado parecido ficam proximas no espaco vetorial.
+Usamos o modelo multilingue pre-treinado
+'paraphrase-multilingual-MiniLM-L12-v2' da biblioteca sentence-transformers.
+Ele e uma rede neural do tipo Transformer que suporta portugues e converte
+cada frase em um vetor denso de 384 dimensoes, no qual frases com
+significado parecido ficam proximas no espaco vetorial.
 
 Esses vetores de alta dimensao (384) sao exatamente o tipo de dado em
 que a reducao de dimensionalidade com PCA faz sentido.
@@ -21,7 +22,7 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 
-MODELO_PADRAO = "all-MiniLM-L6-v2"
+MODELO_PADRAO = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def gerar_embeddings(textos, nome_modelo=MODELO_PADRAO):
