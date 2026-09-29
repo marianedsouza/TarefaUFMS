@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PCA + K-Means sobre Embeddings de Deep Learning</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif;
+          background:var(--bg); color:var(--txt); line-height:1.55; }
+  header { padding:40px 24px; text-align:center;
+            background:linear-gradient(135deg,#1e3a8a,#0f172a); }
+  header h1 { margin:0 0 8px; font-size:1.8rem; }
+  header p { margin:0; color:var(--muted); }
+  main { max-width:1100px; margin:0 auto; padding:24px; }
+  section { margin:36px 0; }
+  h2 { border-left:4px solid var(--accent); padding-left:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+           gap:20px; }
+  figure { margin:0; background:var(--panel); border-radius:12px; padding:12px;
+            box-shadow:0 4px 12px rgba(0,0,0,.3); }
+  figure img { width:100%; border-radius:8px; background:#fff; }
+  figcaption { text-align:center; color:var(--muted); margin-top:8px;
+                font-size:.9rem; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+            gap:16px; }
+  .card { background:var(--panel); border-radius:12px; padding:16px; }
+  .card h3 { margin:0 0 8px; }
+  .card .dom { margin:4px 0; }
+  .card .metric { color:var(--accent); font-weight:600; margin:4px 0; }
+  .card .comp { color:var(--muted); font-size:.9rem; }
+  .card .lbl { margin:10px 0 4px; color:var(--muted); font-size:.85rem; }
+  .card ul { margin:0; padding-left:18px; font-size:.88rem; }
+  .highlight { background:var(--panel); border-radius:12px; padding:20px 24px;
+                border-left:4px solid #16a34a; }
+  .highlight b { color:#4ade80; font-size:1.15rem; }
+  table { width:100%; border-collapse:collapse; background:var(--panel);
+           border-radius:12px; overflow:hidden; font-size:.9rem; }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid #334155; }
+  th { background:#334155; }
+  .chip { display:inline-block; min-width:24px; text-align:center; color:#fff;
+           padding:2px 8px; border-radius:999px; font-weight:600; }
+  pre { background:#0b1220; padding:16px; border-radius:12px; overflow:auto;
+         color:#cbd5e1; font-size:.82rem; }
+  footer { text-align:center; color:var(--muted); padding:30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Reducao de Dimensionalidade (PCA) e Agrupamento (K-Means)</h1>
+  <p>Embeddings gerados por deep learning &middot; modelo all-MiniLM-L6-v2 (384 dimensoes)</p>
+</header>
+<main>
+
+  <section class="highlight">
+    <p>Numero de grupos escolhido pelo <code>silhouette_score</code>:
+       <b>k = 4</b> (silhueta = 0,4170) &mdash; coincidindo com as 4 categorias reais.</p>
+  </section>
+
+  <section>
+    <h2>Graficos</h2>
+    <div class="grid">
+            <figure>
+              <img src="figuras/pca_variancia_explicada.png" alt="PCA - Variancia explicada acumulada">
+              <figcaption>PCA - Variancia explicada acumulada</figcaption>
+            </figure>
+            <figure>
+              <img src="figuras/pca_projecao_2d_categorias.png" alt="Projecao PCA 2D por categoria real">
+              <figcaption>Projecao PCA 2D por categoria real</figcaption>
+            </figure>
+            <figure>
+              <img src="figuras/silhouette_por_k.png" alt="Escolha de k pelo silhouette_score">
+              <figcaption>Escolha de k pelo silhouette_score</figcaption>
+            </figure>
+            <figure>
+              <img src="figuras/clusters_kmeans_2d.png" alt="Grupos do K-Means (k=4) em 2D">
+              <figcaption>Grupos do K-Means (k=4) em 2D</figcaption>
+            </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Grupos encontrados</h2>
+    <div class="cards">
+        <div class="card" style="border-top:4px solid #2563eb">
+          <h3>Cluster 0</h3>
+          <p class="dom">Categoria dominante: <b>tecnologia</b></p>
+          <p class="metric">7 frases &middot; pureza 100%</p>
+          <p class="comp">tecnologia: 7</p>
+          <p class="lbl">Exemplos:</p>
+          <ul><li>A inteligencia artificial esta transformando o mercado de software.</li><li>A linguagem Python e muito usada em ciencia de dados.</li><li>Programadores usam controle de versao para colaborar em projetos.</li></ul>
+        </div>
+        <div class="card" style="border-top:4px solid #16a34a">
+          <h3>Cluster 1</h3>
+          <p class="dom">Categoria dominante: <b>esportes</b></p>
+          <p class="metric">28 frases &middot; pureza 46%</p>
+          <p class="comp">esportes: 13, culinaria: 8, natureza: 7</p>
+          <p class="lbl">Exemplos:</p>
+          <ul><li>O jogador marcou um gol incrivel nos ultimos minutos da partida.</li><li>O maratonista treinou meses para completar a corrida de rua.</li><li>A tenista sacou forte e conquistou o ponto decisivo.</li></ul>
+        </div>
+        <div class="card" style="border-top:4px solid #ea580c">
+          <h3>Cluster 2</h3>
+          <p class="dom">Categoria dominante: <b>tecnologia</b></p>
+          <p class="metric">22 frases &middot; pureza 45%</p>
+          <p class="comp">tecnologia: 10, culinaria: 7, esportes: 4, natureza: 1</p>
+          <p class="lbl">Exemplos:</p>
+          <ul><li>O novo processador tem oito nucleos e alta velocidade de clock.</li><li>O smartphone novo vem com uma bateria de longa duracao.</li><li>Redes neurais aprendem padroes a partir de grandes volumes de dados.</li></ul>
+        </div>
+        <div class="card" style="border-top:4px solid #9333ea">
+          <h3>Cluster 3</h3>
+          <p class="dom">Categoria dominante: <b>natureza</b></p>
+          <p class="metric">23 frases &middot; pureza 52%</p>
+          <p class="comp">natureza: 12, culinaria: 5, tecnologia: 3, esportes: 3</p>
+          <p class="lbl">Exemplos:</p>
+          <ul><li>Precisamos atualizar o servidor para melhorar o desempenho do site.</li><li>O aplicativo trava quando abrimos muitas abas ao mesmo tempo.</li><li>O teclado mecanico tem uma resposta tatil muito agradavel.</li></ul>
+        </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Atribuicoes (todas as frases)</h2>
+    <table>
+      <thead><tr><th>Frase</th><th>Categoria real</th><th>Cluster</th></tr></thead>
+      <tbody><tr><td>O novo processador tem oito nucleos e alta velocidade de clock.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>A inteligencia artificial esta transformando o mercado de software.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>Precisamos atualizar o servidor para melhorar o desempenho do site.</td><td>tecnologia</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A linguagem Python e muito usada em ciencia de dados.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>O smartphone novo vem com uma bateria de longa duracao.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Redes neurais aprendem padroes a partir de grandes volumes de dados.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>A nuvem permite armazenar arquivos e acessa-los de qualquer lugar.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Programadores usam controle de versao para colaborar em projetos.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>O algoritmo de busca retorna resultados em milissegundos.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>A criptografia protege os dados durante a transmissao pela internet.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O aplicativo trava quando abrimos muitas abas ao mesmo tempo.</td><td>tecnologia</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>Placas de video modernas aceleram o treino de modelos de aprendizado.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>A rede sem fio caiu e perdemos a conexao com o banco de dados.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Compiladores traduzem codigo fonte em instrucoes de maquina.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O teclado mecanico tem uma resposta tatil muito agradavel.</td><td>tecnologia</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>Contêineres facilitam a implantacao de aplicacoes em qualquer ambiente.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O modelo de linguagem gera texto coerente a partir de um comando.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>A memoria RAM insuficiente deixa o computador lento.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>Testes automatizados ajudam a evitar erros no sistema.</td><td>tecnologia</td><td><span class='chip' style='background:#2563eb'>0</span></td></tr><tr><td>O robo aspirador mapeia a casa com sensores a laser.</td><td>tecnologia</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O jogador marcou um gol incrivel nos ultimos minutos da partida.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A selecao venceu o campeonato depois de uma disputa de penaltis.</td><td>esportes</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O maratonista treinou meses para completar a corrida de rua.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O time de basquete converteu a cesta de tres pontos no fim.</td><td>esportes</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>A tenista sacou forte e conquistou o ponto decisivo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O tecnico mudou a formacao tatica no segundo tempo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>Os nadadores competiram nos cem metros livres.</td><td>esportes</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O ciclista liderou a etapa nas montanhas com folga.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A torcida vibrou com a vitoria no ultimo lance do jogo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O goleiro defendeu o penalti e garantiu o titulo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O boxeador venceu a luta por nocaute no terceiro round.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A ginasta executou um salto perfeito e recebeu nota maxima.</td><td>esportes</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O piloto largou na pole position e venceu a corrida.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O volei brasileiro conquistou a medalha de ouro.</td><td>esportes</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O atleta bateu o recorde mundial de salto em distancia.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A partida de futebol terminou empatada em dois a dois.</td><td>esportes</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O time de rugby avancou com forca ate a linha de fundo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O surfista dropou uma onda gigante no campeonato.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>Os jogadores comemoraram a classificacao para a final.</td><td>esportes</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O arbitro apitou o fim do jogo e a torcida invadiu o campo.</td><td>esportes</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A receita leva farinha, ovos, acucar e uma pitada de sal.</td><td>culinaria</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O molho de tomate fica mais saboroso com manjericao fresco.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>Assamos o bolo de chocolate por quarenta minutos no forno.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O restaurante serve uma feijoada completa aos sabados.</td><td>culinaria</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A massa da pizza precisa descansar antes de ir ao forno.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>Refogamos a cebola e o alho antes de adicionar o arroz.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O cafe da manha inclui pao quentinho, manteiga e suco de laranja.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A sobremesa era um pudim de leite condensado bem cremoso.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Temperamos a carne com sal grosso e alecrim antes de grelhar.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A sopa de legumes aquece bem nos dias frios de inverno.</td><td>culinaria</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O chef finalizou o prato com uma reducao de vinho tinto.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>Batemos as claras em neve para deixar o bolo fofo.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>O peixe grelhado veio acompanhado de arroz e salada verde.</td><td>culinaria</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A padaria vende croissants amanteigados logo cedo.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Colocamos queijo derretido por cima do macarrao gratinado.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O suco de frutas frescas e uma otima opcao no verao.</td><td>culinaria</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A lasanha ficou pronta com camadas de molho e presunto.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>Deixamos a massa do pao crescer por duas horas.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O hamburguer artesanal vinha com bacon e cebola caramelizada.</td><td>culinaria</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>O doce de leite caseiro acompanha bem o queijo mineiro.</td><td>culinaria</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A floresta amazonica abriga uma enorme diversidade de especies.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O rio corre entre as montanhas ate desaguar no mar.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>As abelhas sao essenciais para a polinizacao das plantas.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O desmatamento ameaca o habitat de muitos animais silvestres.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A chuva forte encheu os lagos e regou as plantacoes.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O passaro construiu o ninho no alto da arvore.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>As tartarugas marinhas retornam a praia para desovar.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O vento espalha as sementes pelo campo aberto.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A reciclagem ajuda a reduzir a poluicao do meio ambiente.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O sol nasce atras das colinas iluminando o vale.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A geleira derrete mais rapido por causa do aquecimento global.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>As raizes das arvores seguram o solo e evitam a erosao.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O recife de corais abriga peixes de cores vibrantes.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>A trilha na mata revela cachoeiras escondidas.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>Os lobos vivem em matilhas nas regioes frias do norte.</td><td>natureza</td><td><span class='chip' style='background:#ea580c'>2</span></td></tr><tr><td>A borboleta pousou suavemente sobre a flor amarela.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O deserto tem noites frias e dias muito quentes.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>A preservacao das nascentes garante agua limpa para todos.</td><td>natureza</td><td><span class='chip' style='background:#9333ea'>3</span></td></tr><tr><td>O urso hiberna durante o inverno rigoroso.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr><tr><td>As folhas caem no outono e cobrem o chao da floresta.</td><td>natureza</td><td><span class='chip' style='background:#16a34a'>1</span></td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Resumo numerico da execucao</h2>
+    <pre>Modelo de deep learning: all-MiniLM-L6-v2
+Dimensao dos embeddings: 384
+Numero de frases: 80
+== PCA ==
+Dimensao original dos embeddings: 384
+Variancia explicada pelas 2 primeiras componentes: 9.47%
+Variancia explicada pelas 3 primeiras componentes: 13.36%
+Componentes necessarias para &gt;= 80% da variancia: 40
+Componentes necessarias para &gt;= 90% da variancia: 54
+Componentes usadas no K-Means: 2 (9.47% da variancia)
+k=2: silhouette=0.3797
+k=3: silhouette=0.4095
+k=4: silhouette=0.4170
+k=5: silhouette=0.4034
+k=6: silhouette=0.4122
+k=7: silhouette=0.3683
+k=8: silhouette=0.3822
+k=9: silhouette=0.3758
+k=10: silhouette=0.3553
+MELHOR k = 4 (silhouette = 0.4170)
+
+== ANALISE DOS GRUPOS ==
+Cluster 0: 7 frases | categoria dominante = 'tecnologia' (7/7 = 100% de pureza)
+  composicao: {'tecnologia': 7}
+  exemplo: A inteligencia artificial esta transformando o mercado de software.
+  exemplo: A linguagem Python e muito usada em ciencia de dados.
+  exemplo: Programadores usam controle de versao para colaborar em projetos.
+Cluster 1: 28 frases | categoria dominante = 'esportes' (13/28 = 46% de pureza)
+  composicao: {'esportes': 13, 'culinaria': 8, 'natureza': 7}
+  exemplo: O jogador marcou um gol incrivel nos ultimos minutos da partida.
+  exemplo: O maratonista treinou meses para completar a corrida de rua.
+  exemplo: A tenista sacou forte e conquistou o ponto decisivo.
+Cluster 2: 22 frases | categoria dominante = 'tecnologia' (10/22 = 45% de pureza)
+  composicao: {'tecnologia': 10, 'esportes': 4, 'culinaria': 7, 'natureza': 1}
+  exemplo: O novo processador tem oito nucleos e alta velocidade de clock.
+  exemplo: O smartphone novo vem com uma bateria de longa duracao.
+  exemplo: Redes neurais aprendem padroes a partir de grandes volumes de dados.
+Cluster 3: 23 frases | categoria dominante = 'natureza' (12/23 = 52% de pureza)
+  composicao: {'tecnologia': 3, 'esportes': 3, 'culinaria': 5, 'natureza': 12}
+  exemplo: Precisamos atualizar o servidor para melhorar o desempenho do site.
+  exemplo: O aplicativo trava quando abrimos muitas abas ao mesmo tempo.
+  exemplo: O teclado mecanico tem uma resposta tatil muito agradavel.
+
+Adjusted Rand Index (clusters vs categorias reais): 0.1471</pre>
+  </section>
+
+</main>
+<footer>Gerado automaticamente a partir dos resultados de <code>main.py</code></footer>
+</body>
+</html>
